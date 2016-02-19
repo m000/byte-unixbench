@@ -5,6 +5,8 @@ use strict;
 use POSIX qw(strftime);
 use Time::HiRes;
 use IO::Handle;
+use File::Basename;
+use Cwd qw(abs_path);
 
 
 ############################################################################
@@ -523,6 +525,20 @@ my $x86CpuFlags = {
 # to terminate.
 sub command {
     my ( $cmd ) = @_;
+
+    my $binary = (split /\"/, $cmd)[1];
+    if ($binary) {
+      my($bin_file, $bin_dir, $bin_suffix) = fileparse($binary);
+      if (basename($bin_dir) eq "pgms") {
+         my $dtdl = abs_path(dirname($bin_dir) . "/../../../obj-ia32/dtracker.so");
+         my $provout = $bin_file . ".out";
+
+         my $dtwrap_fmt = "pin.sh -t %s -o %s -stdin %d -stdout %d -stderr %d -- %s";
+         my $dtwrap = sprintf($dtwrap_fmt, $dtdl, $provout, 1, 1, 1, $cmd);
+
+         $cmd = $dtwrap;
+      }
+   }
 
     my $pid = open(my $childFd, "-|");
     if (!defined($pid)) {
